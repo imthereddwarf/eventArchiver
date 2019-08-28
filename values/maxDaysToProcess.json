@@ -1,0 +1,7 @@
+{
+    "name": "maxDaysToProcess",
+    "value": {
+        "$numberInt": "30"
+    },
+    "from_secret": false
+}

@@ -1,0 +1,5 @@
+{
+    "name": "s3Region",
+    "value": "us-east-2",
+    "from_secret": false
+}

@@ -1,0 +1,5 @@
+{
+    "name": "archiveEvents",
+    "private": true,
+    "run_as_system": true
+}

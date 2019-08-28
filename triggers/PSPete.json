@@ -1,0 +1,9 @@
+{
+    "name": "PSPete",
+    "type": "SCHEDULED",
+    "config": {
+        "schedule": "*/5 * * * *"
+    },
+    "function_name": "executeArchiver",
+    "disabled": true
+}

@@ -1,0 +1,5 @@
+{
+    "name": "s3Bucket",
+    "value": "log-uploader",
+    "from_secret": false
+}

@@ -1,0 +1,11 @@
+{
+    "name": "S3Bucket",
+    "type": "aws",
+    "config": {
+        "accessKeyId": "AKIAITRFYI3ENVZHVTZA"
+    },
+    "secret_config": {
+        "secretAccessKey": "S3SecretKey"
+    },
+    "version": 1
+}

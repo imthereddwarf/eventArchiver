@@ -1,0 +1,7 @@
+{
+    "name": "maxControlObjects",
+    "value": {
+        "$numberInt": "365"
+    },
+    "from_secret": false
+}

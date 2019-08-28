@@ -1,0 +1,6 @@
+{
+    "name": "s3Rule",
+    "actions": [
+        "s3:*"
+    ]
+}
