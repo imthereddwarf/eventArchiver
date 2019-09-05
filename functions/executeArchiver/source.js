@@ -1,3 +1,3 @@
 exports = function(){
-   context.functions.execute('archiveEvents', 'PSPeter');
+   context.functions.execute('archiveEvents', 'Production');
  };
