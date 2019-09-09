@@ -9,7 +9,10 @@ var maxControlObjects = 30; //Maximum number of checksums to preserve
 var maxDaysToProcess = 10; 
 var s3Bucket ="log-uploader";
 var s3Region = "us-east-2";
+const s3Service = 'S3Bucket' 
 const fName = "archiveEvents";
+const username = "Not Set";
+const apiKey = "Not set";
 
 function ArchiveException(message) {
 	this.message = message;
@@ -18,8 +21,7 @@ function ArchiveException(message) {
 
 async function cloudAuthenticatedRequest(url,prefix){
 
-    const username = context.values.get(`${prefix}-pub`);
-    const apiKey = context.values.get(`${prefix}-sec`);
+
     if (typeof(username) == 'undefined' || typeof(apiKey) =='undefined')
     	throw `cloudAuthenticateRequest:  "${prefix}-pub" or "${prefix}-sec" are not defined.`;
     return context.http
@@ -64,14 +66,14 @@ async function cloudAuthenticatedRequest(url,prefix){
 async function writeS3Object(key,value){
 
 	
-	  const s3Service = context.services.get('S3Bucket').s3('us-east-2');
+	  const s3Service = context.services.get(s3Service).s3(s3Region);
 	  var payload = "";
 	  for (i=0;i<value.length;i++)
 	    payload += EJSON.stringify(value[i]);
 	  const s2 = utils.crypto.hash('md5',payload).toBase64();
 	  //console.log(`MD5 is ${s2}`);
 	  return s3Service.PutObject({
-	    'Bucket': "log-uploader",
+	    'Bucket': s3Bucket,
 	    'Key': key,
 	    'ContentType': "application/json",
 	    'ContentMD5': s2,
@@ -493,17 +495,17 @@ async function doit(prefix_in){
 
 exports = function(prefix_in){
 	try {
+	    username = context.values.get(`${prefix}-pub`);
+	    apiKey = context.values.get(`${prefix}-sec`);
 		let mco = context.values.get('maxControlObjects');
 		if (typeof(mco) == 'number') maxControlObjects = mco;
-		//console.log(typeof(mco));
 		let mdp = context.values.get('maxDaysToProcess');
 		if (typeof(mdp) == 'number') maxDaysToProcess = mdp;
 		let s3b = context.values.get('s3Bucket');
 		if (typeof(s3b) == 'string') s3Bucket = s3b;
-		//console.log(typeof(s3b));
 		let s3r = context.values.get('s3Region');
 		if (typeof(s3r) == 'string') s3Region = s3r;
-		console.log(`Settings: MCO=${maxControlObjects}, MDP=${maxDaysToProcess}, S3B=${s3Bucket}, S3R=${s3Region}.`);
+		console.log(`Settings: MCO=${maxControlObjects}, MDP=${maxDaysToProcess}, S3B=${s3Bucket}, S3R=${s3Region}, APK=${username}.`);
 		let result = doit(prefix_in);
 		return (result);
 	}
