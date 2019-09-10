@@ -1,5 +1,5 @@
 {
-    "name": "PSPete",
+    "name": "ProductionArchiver",
     "type": "SCHEDULED",
     "config": {
         "schedule": "*/5 * * * *"
