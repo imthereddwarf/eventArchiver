@@ -9,10 +9,10 @@ var maxControlObjects = 30; //Maximum number of checksums to preserve
 var maxDaysToProcess = 10; 
 var s3Bucket ="log-uploader";
 var s3Region = "us-east-2";
-const s3Service = 'S3Bucket' 
+const s3ServiceName = 'S3Bucket' 
 const fName = "archiveEvents";
-const username = "Not Set";
-const apiKey = "Not set";
+var username = "Not Set";
+var apiKey = "Not set";
 
 function ArchiveException(message) {
 	this.message = message;
@@ -22,8 +22,6 @@ function ArchiveException(message) {
 async function cloudAuthenticatedRequest(url,prefix){
 
 
-    if (typeof(username) == 'undefined' || typeof(apiKey) =='undefined')
-    	throw `cloudAuthenticateRequest:  "${prefix}-pub" or "${prefix}-sec" are not defined.`;
     return context.http
       .get({ url:url})
       .then(resp => {
@@ -49,8 +47,7 @@ async function cloudAuthenticatedRequest(url,prefix){
           .then(({ body }) => {
         	  result = body.text ? JSON.parse(body.text()) : { links: [], results: [] }
         	  if (typeof result.error == 'number') {
-        		  console.error(`Error: ${result.error} "${result.detail}" fetching ${url}.`);
-        		  return(null);
+        		  return Promise.reject(`Error: ${result.error} "${result.detail}" fetching ${url}.`);
         	  }
         	  return(result);
           })
@@ -66,7 +63,7 @@ async function cloudAuthenticatedRequest(url,prefix){
 async function writeS3Object(key,value){
 
 	
-	  const s3Service = context.services.get(s3Service).s3(s3Region);
+	  const s3Service = context.services.get(s3ServiceName).s3(s3Region);
 	  var payload = "";
 	  for (i=0;i<value.length;i++)
 	    payload += EJSON.stringify(value[i]);
@@ -97,10 +94,10 @@ async function writeS3Object(key,value){
 
 setQueryDate = function(day) {
   //console.log(`QueryDate ${day}`);	
-  var queryDate = {"minDate": 0,"maxDate": 0};
-  var minDate = day.getTime() - (day.getTime() % 86400000);  // Make it midnight UTC
-  var maxDate = minDate + 86400000 - 1;  // Range is one day
-  queryDate.minDate = new Date(minDate).toISOString();
+  let queryDate = {"minEpoch": 0, "minDate": 0,"maxDate": 0};
+  queryDate.minEpoch = day.getTime() - (day.getTime() % 86400000);  // Make it midnight UTC
+  let maxDate = queryDate.minEpoch + 86400000 - 1;  // Range is one day
+  queryDate.minDate = new Date(queryDate.minEpoch).toISOString();
   queryDate.maxDate = new Date(maxDate).toISOString();
   return(queryDate);
 };
@@ -329,7 +326,7 @@ async function getLastDate(s3Service,objName) {
 
 async function getControlObj(prefix){
 
-	  const s3Service = context.services.get('S3Bucket').s3(s3Region);
+	  const s3Service = context.services.get(s3ServiceName).s3(s3Region);
 	  return  s3Service.ListObjectsV2({
 	    'Bucket': s3Bucket,
 	    'MaxKeys': 10,
@@ -415,13 +412,15 @@ async function doit(prefix_in){
 				}
 					
 				daysProcessed = [];
-				dt = day;
-			    //for (dt=day;dt < timer;dt = (new Date(dt.getTime()+oneDay))) {
+				let start  = setQueryDate(day);
+				let today = setQueryDate(new Date());
+				dt = start.minEpoch;
+				let endDate = today.minEpoch;
+
 				for(i=0;i<maxDaysToProcess;i++) {
-			    	//console.log(`Loop ${dt} to ${timer} (${new Date(dt.getTime()+oneDay)})`);
 			    	daysProcessed.push(getOneDay(urls,new Date(dt)));
-			    	dt = new Date(dt.getTime()+oneDay);
-			    	if (dt > new Date()) break;
+			    	dt = dt+oneDay;
+			    	if (dt >= endDate) break;
 			    }
 			    return Promise.all(daysProcessed)
 			    .then(response => {
@@ -495,8 +494,13 @@ async function doit(prefix_in){
 
 exports = function(prefix_in){
 	try {
-	    username = context.values.get(`${prefix}-pub`);
-	    apiKey = context.values.get(`${prefix}-sec`);
+	    username = context.values.get(`${prefix_in}-pub`);
+	    apiKey = context.values.get(`${prefix_in}-sec`);
+		if (typeof(username) != "string" || typeof(apiKey) != "string") {
+		    console.error(`API Crdentials missing for ${prefix_in}`);
+		    dataDogEvent("Atlas Event Archiver failed ",`API Crdentials missing for  ${prefix_in}.`,prefix_in,"error");
+		    return(false);
+		}
 		let mco = context.values.get('maxControlObjects');
 		if (typeof(mco) == 'number') maxControlObjects = mco;
 		let mdp = context.values.get('maxDaysToProcess');
